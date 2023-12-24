@@ -80,13 +80,17 @@ struct API {
     jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
   }
 
-  public func fetch<Type: Decodable>(endpoint: Endpoint) async throws -> RemoteData<Type> {
+  public func fetch<Type: Decodable>(endpoint: Endpoint) async -> RemoteData<Type> {
     let url = URL(string: "https://hacker-news.firebaseio.com/v0/" + endpoint.path + ".json")!
 
-    let (data, _) = try await URLSession.shared.data(from: url)
-    let decodedData = try jsonDecoder.decode(Type.self, from: data)
+    do {
+      let (data, _) = try await URLSession.shared.data(from: url)
+      let decodedData = try jsonDecoder.decode(Type.self, from: data)
 
-    return .success(decodedData)
+      return .success(decodedData)
+    } catch {
+      return .failure(error)
+    }
   }
 }
 
@@ -141,11 +145,7 @@ struct ContentView: View {
   }
 
   private func fetchStoryIDs() async -> [Int] {
-    do {
-      return try await API.shared.fetch(endpoint: .topStories).value ?? []
-    } catch {
-      return []
-    }
+    return await API.shared.fetch(endpoint: .topStories).value ?? []
   }
 
   private func fetchStories<IDs: Sequence>(ids: IDs) async -> [Story] where IDs.Element == Int {
@@ -155,7 +155,7 @@ struct ContentView: View {
 
         for id in ids {
           group.addTask {
-            return try await API.shared.fetch(endpoint: .item(id: id)).value!
+            return await API.shared.fetch(endpoint: .item(id: id)).value!
           }
         }
 
