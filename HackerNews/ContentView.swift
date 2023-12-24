@@ -9,9 +9,11 @@ import Foundation
 import SwiftUI
 
 struct API {
+  static let shared = API()
+
   enum Endpoint {
     case topStories
-    case item(id: Int)
+    case item(id: Story.ID)
 
     var path: String {
       switch self {
@@ -23,30 +25,29 @@ struct API {
     }
   }
 
-  static let shared = API()
-
-  private let jsonDecoder = JSONDecoder()
+  private let jsonDecoder: JSONDecoder
 
   public init() {
+    jsonDecoder = JSONDecoder()
     jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
   }
 
   public func fetch<Type: Decodable>(endpoint: Endpoint) async -> Result<Type, Error> {
-    let url = URL(string: "https://hacker-news.firebaseio.com/v0/" + endpoint.path + ".json")!
+    await Task {
+      let url = URL(string: "https://hacker-news.firebaseio.com/v0/" + endpoint.path + ".json")!
 
-    let task = Task {
       let (data, _) = try await URLSession.shared.data(from: url)
       let decodedData = try jsonDecoder.decode(Type.self, from: data)
 
       return decodedData
-    }
-
-    return await task.result
+    }.result
   }
 }
 
 struct Story: Decodable, Hashable, Identifiable {
-  var id: Int
+  typealias ID = Int
+
+  var id: ID
   var title: String?
 }
 
@@ -84,44 +85,40 @@ struct ContentView: View {
       }
     }
     .task {
-      await fetch()
+      let storyIDs = await fetchStoryIDs().prefix(10)
+      async let stories = fetchStories(ids: storyIDs)
+
+      self.state = await .success(stories: stories)
     }
   }
 
-  private func fetch() async {
-    let storyIDs = await fetchStoryIDs().prefix(10)
-    async let stories = fetchStories(ids: storyIDs)
-
-    self.state = await .success(stories: stories)
-  }
-
-  private func fetchStoryIDs() async -> [Int] {
-    do {
-      return try await API.shared.fetch(endpoint: .topStories).get()
-    } catch {
+  private func fetchStoryIDs() async -> [Story.ID] {
+    switch await API.shared.fetch(endpoint: .topStories) as Result<[Int], Error> {
+    case let .success(storyIDs):
+      return storyIDs
+    default:
       return []
     }
   }
 
-  private func fetchStories<IDs: Sequence>(ids: IDs) async -> [Story] where IDs.Element == Int {
-    do {
-      return try await withThrowingTaskGroup(of: Story.self) { group -> [Story] in
-        var stories: [Story] = []
+  private func fetchStories<IDs: Sequence>(ids: IDs) async -> [Story]
+  where IDs.Element == Story.ID {
+    return await withTaskGroup(of: Result<Story, Error>.self) { group -> [Story] in
+      var stories: [Story] = []
 
-        for id in ids {
-          group.addTask {
-            return try! await API.shared.fetch(endpoint: .item(id: id)).get()
-          }
+      for id in ids {
+        group.addTask {
+          await API.shared.fetch(endpoint: .item(id: id))
         }
+      }
 
-        for try await story in group {
+      for await result in group {
+        if case let .success(story) = result {
           stories.append(story)
         }
-
-        return stories
       }
-    } catch {
-      return []
+
+      return stories
     }
   }
 }
