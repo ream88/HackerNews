@@ -8,55 +8,6 @@
 import Foundation
 import SwiftUI
 
-enum RemoteData<Value> {
-  case notAsked
-  case loading
-  case success(Value)
-  case failure(Error)
-
-  var value: Value? {
-    switch self {
-    case let .success(value):
-      return value
-
-    default:
-      return nil
-    }
-  }
-
-  @discardableResult func map<T>(_ transform: (Value) -> T) -> RemoteData<T> {
-    switch self {
-    case .notAsked:
-      return .notAsked
-
-    case .loading:
-      return .loading
-
-    case let .success(value):
-      return .success(transform(value))
-
-    case let .failure(error):
-      return .failure(error)
-    }
-  }
-
-  func withDefault<T: Equatable>(_ defaultValue: T) -> T {
-    switch self {
-    case let .success(value):
-      return value as! T
-
-    default:
-      return defaultValue
-    }
-  }
-}
-
-extension RemoteData: Equatable where Value: Equatable {
-  static func == (lhs: RemoteData<Value>, rhs: RemoteData<Value>) -> Bool {
-    lhs.value == rhs.value
-  }
-}
-
 struct API {
   enum Endpoint {
     case topStories
@@ -80,17 +31,17 @@ struct API {
     jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
   }
 
-  public func fetch<Type: Decodable>(endpoint: Endpoint) async -> RemoteData<Type> {
+  public func fetch<Type: Decodable>(endpoint: Endpoint) async -> Result<Type, Error> {
     let url = URL(string: "https://hacker-news.firebaseio.com/v0/" + endpoint.path + ".json")!
 
-    do {
+    let task = Task {
       let (data, _) = try await URLSession.shared.data(from: url)
       let decodedData = try jsonDecoder.decode(Type.self, from: data)
 
-      return .success(decodedData)
-    } catch {
-      return .failure(error)
+      return decodedData
     }
+
+    return await task.result
   }
 }
 
@@ -145,7 +96,11 @@ struct ContentView: View {
   }
 
   private func fetchStoryIDs() async -> [Int] {
-    return await API.shared.fetch(endpoint: .topStories).value ?? []
+    do {
+      return try await API.shared.fetch(endpoint: .topStories).get()
+    } catch {
+      return []
+    }
   }
 
   private func fetchStories<IDs: Sequence>(ids: IDs) async -> [Story] where IDs.Element == Int {
@@ -155,7 +110,7 @@ struct ContentView: View {
 
         for id in ids {
           group.addTask {
-            return await API.shared.fetch(endpoint: .item(id: id)).value!
+            return try! await API.shared.fetch(endpoint: .item(id: id)).get()
           }
         }
 
