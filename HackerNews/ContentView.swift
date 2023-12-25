@@ -8,51 +8,10 @@
 import Foundation
 import SwiftUI
 
-struct API {
-  static let shared = API()
-
-  enum Endpoint {
-    case topStories
-    case item(id: Story.ID)
-
-    var path: String {
-      switch self {
-      case .topStories:
-        return "topstories"
-      case let .item(id: id):
-        return "item/" + String(id)
-      }
-    }
-  }
-
-  private let jsonDecoder: JSONDecoder
-
-  public init() {
-    jsonDecoder = JSONDecoder()
-    jsonDecoder.keyDecodingStrategy = .convertFromSnakeCase
-  }
-
-  public func fetch<Type: Decodable>(endpoint: Endpoint) async -> Result<Type, Error> {
-    await Task {
-      let url = URL(string: "https://hacker-news.firebaseio.com/v0/" + endpoint.path + ".json")!
-
-      let (data, _) = try await URLSession.shared.data(from: url)
-      let decodedData = try jsonDecoder.decode(Type.self, from: data)
-
-      return decodedData
-    }.result
-  }
-}
-
-struct Story: Decodable, Hashable, Identifiable {
-  typealias ID = Int
-
-  var id: ID
-  var title: String?
-}
-
 @MainActor
 struct ContentView: View {
+  @Environment(API.self) private var api
+
   enum ViewState {
     case loading
     case error(error: Error)
@@ -93,7 +52,7 @@ struct ContentView: View {
   }
 
   private func fetchStoryIDs() async -> [Story.ID] {
-    switch await API.shared.fetch(endpoint: .topStories) as Result<[Int], Error> {
+    switch await api.fetch(endpoint: .topStories) as Result<[Int], Error> {
     case let .success(storyIDs):
       return storyIDs
     default:
@@ -108,7 +67,7 @@ struct ContentView: View {
 
       for id in ids {
         group.addTask {
-          await API.shared.fetch(endpoint: .item(id: id))
+          await api.fetch(endpoint: .item(id: id))
         }
       }
 

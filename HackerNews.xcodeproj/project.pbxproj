@@ -11,6 +11,7 @@
 		AC7451CB2B35A7A2004DAE0A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC7451CA2B35A7A2004DAE0A /* ContentView.swift */; };
 		AC7451CD2B35A7A3004DAE0A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC7451CC2B35A7A3004DAE0A /* Assets.xcassets */; };
 		AC7451D02B35A7A3004DAE0A /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC7451CF2B35A7A3004DAE0A /* Preview Assets.xcassets */; };
+		ACBFD9962B397EA9007C5E16 /* API.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBFD9952B397EA9007C5E16 /* API.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +20,7 @@
 		AC7451CA2B35A7A2004DAE0A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AC7451CC2B35A7A3004DAE0A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AC7451CF2B35A7A3004DAE0A /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		ACBFD9952B397EA9007C5E16 /* API.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = API.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,8 +53,9 @@
 		AC7451C72B35A7A2004DAE0A /* HackerNews */ = {
 			isa = PBXGroup;
 			children = (
-				AC7451C82B35A7A2004DAE0A /* HackerNewsApp.swift */,
+				ACBFD9952B397EA9007C5E16 /* API.swift */,
 				AC7451CA2B35A7A2004DAE0A /* ContentView.swift */,
+				AC7451C82B35A7A2004DAE0A /* HackerNewsApp.swift */,
 				AC7451CC2B35A7A3004DAE0A /* Assets.xcassets */,
 				AC7451CE2B35A7A3004DAE0A /* Preview Content */,
 			);
@@ -138,6 +141,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AC7451CB2B35A7A2004DAE0A /* ContentView.swift in Sources */,
+				ACBFD9962B397EA9007C5E16 /* API.swift in Sources */,
 				AC7451C92B35A7A2004DAE0A /* HackerNewsApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
